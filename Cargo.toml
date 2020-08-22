@@ -1,0 +1,20 @@
+[package]
+name = "openat_secure"
+version = "0.1.0"
+edition = "2018"
+
+description = "Security-focused extension methods for the openat crate"
+readme = "README.md"
+authors = ["cptpcrd"]
+license = "MIT"
+repository = "https://github.com/cptpcrd/openat_secure"
+
+[dependencies]
+openat = "0.1"
+
+libc = "0.2"
+
+bitflags = "1.2"
+
+[dev-dependencies]
+tempfile = "3.1"
