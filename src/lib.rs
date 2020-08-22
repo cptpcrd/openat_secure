@@ -239,7 +239,7 @@ fn open_file_base(
     flags: libc::c_int,
     mode: libc::mode_t,
 ) -> io::Result<fs::File> {
-    let fd = unsafe { libc::openat(dirfd, fname.as_ptr(), flags, mode) };
+    let fd = unsafe { libc::openat(dirfd, fname.as_ptr(), flags, mode as libc::c_int) };
 
     if fd < 0 {
         Err(io::Error::last_os_error())
@@ -315,9 +315,9 @@ fn open_file_secure(
     }
 
     let root_dev = if lookup_flags.contains(LookupFlags::NO_XDEV) {
-        root_dir.self_metadata()?.stat().st_dev
+        root_dir.self_metadata()?.stat().st_dev as u64
     } else {
-        libc::dev_t::MAX
+        u64::MAX
     };
 
     let mut curdir = None;
