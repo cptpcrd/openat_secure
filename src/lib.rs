@@ -403,6 +403,20 @@ fn open_file_secure(
 
                 let open_errno = open_err.raw_os_error().unwrap_or(0);
 
+                #[cfg(target_os = "freebsd")]
+                let open_errno = if open_errno == libc::EMLINK {
+                    libc::ELOOP
+                } else {
+                    open_errno
+                };
+
+                #[cfg(target_os = "netbsd")]
+                let open_errno = if open_errno == libc::EFTYPE {
+                    libc::ELOOP
+                } else {
+                    open_errno
+                };
+
                 if open_errno == libc::ELOOP || open_errno == libc::ENOTDIR {
                     // The path may be a symbolic link.
                     // If open_errno is ELOOP, it definitely is.
