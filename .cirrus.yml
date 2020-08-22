@@ -25,7 +25,7 @@ task:
         TOOLCHAIN: nightly
 
   env:
-    CODECOV_TOKEN: ENCRYPTED[]
+    CODECOV_TOKEN: ENCRYPTED[e7066b9711f5cd3ff45bb0f7e7e2c031d4b93ba94e1721b244adbbb4af0ac0fda224c34a6d345136e6cc9c1761d4aa0c]
 
   install_script:
     - pkg install -y curl kcov bash
