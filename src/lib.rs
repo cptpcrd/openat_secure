@@ -330,12 +330,20 @@ impl DirSecureExt for Dir {
         }
     }
 
+    #[allow(clippy::needless_return)]
     fn list_dir_secure<P: AsRef<Path>>(
         &self,
         path: P,
         lookup_flags: LookupFlags,
     ) -> io::Result<openat::DirIter> {
-        self.sub_dir_secure(path, lookup_flags)?.list_self()
+        let subdir = self.sub_dir_secure(path, lookup_flags)?;
+
+        // list_self() is currently broken on Linux
+        #[cfg(target_os = "linux")]
+        return subdir.list_dir(".");
+
+        #[cfg(not(target_os = "linux"))]
+        return subdir.list_self();
     }
 
     fn metadata_secure<P: AsRef<Path>>(
