@@ -1,9 +1,9 @@
 use std::collections::LinkedList;
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr, CString, OsStr};
 use std::fs;
 use std::io;
 use std::os::unix::prelude::*;
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
 
 use bitflags::bitflags;
 use openat::Dir;
@@ -77,6 +77,56 @@ pub trait DirSecureExt {
         mode: libc::mode_t,
         lookup_flags: LookupFlags,
     ) -> io::Result<fs::File>;
+
+    fn create_dir_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        mode: libc::mode_t,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()>;
+
+    fn remove_dir_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()>;
+    fn remove_file_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()>;
+
+    fn list_dir_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<openat::DirIter>;
+
+    fn metadata_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<openat::Metadata>;
+
+    fn read_link_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<PathBuf>;
+
+    fn symlink_secure<P: AsRef<Path>, R: openat::AsPath>(
+        &self,
+        path: P,
+        value: R,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()>;
+
+    fn local_rename_secure<P: AsRef<Path>, R: AsRef<Path>>(
+        &self,
+        old: P,
+        new: R,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()>;
 }
 
 impl DirSecureExt for Dir {
@@ -230,6 +280,248 @@ impl DirSecureExt for Dir {
             mode,
         )?;
         Ok(unsafe { fs::File::from_raw_fd(fd) })
+    }
+
+    fn create_dir_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        mode: libc::mode_t,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()> {
+        let (subdir, fname) = prepare_inner_operation(self, path.as_ref(), lookup_flags)?;
+
+        if let Some(fname) = fname {
+            subdir.as_ref().unwrap_or(self).create_dir(fname, mode)
+        } else {
+            Err(std::io::Error::from_raw_os_error(libc::EEXIST))
+        }
+    }
+
+    fn remove_dir_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()> {
+        let path = path.as_ref();
+
+        let (subdir, fname) = prepare_inner_operation(self, path, lookup_flags)?;
+
+        if let Some(fname) = fname {
+            subdir.as_ref().unwrap_or(self).remove_dir(fname)
+        } else {
+            Err(std::io::Error::from_raw_os_error(
+                if path == Path::new("/") || path == Path::new("..") {
+                    libc::EBUSY
+                } else {
+                    libc::ENOTEMPTY
+                },
+            ))
+        }
+    }
+
+    fn remove_file_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()> {
+        let (subdir, fname) = prepare_inner_operation(self, path.as_ref(), lookup_flags)?;
+
+        if let Some(fname) = fname {
+            subdir.as_ref().unwrap_or(self).remove_file(fname)
+        } else {
+            Err(std::io::Error::from_raw_os_error(libc::EISDIR))
+        }
+    }
+
+    fn list_dir_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<openat::DirIter> {
+        self.sub_dir_secure(path, lookup_flags)?.list_self()
+    }
+
+    fn metadata_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<openat::Metadata> {
+        let (subdir, fname) = prepare_inner_operation(self, path.as_ref(), lookup_flags)?;
+
+        let subdir = subdir.as_ref().unwrap_or(self);
+
+        if let Some(fname) = fname {
+            subdir.metadata(fname)
+        } else {
+            subdir.self_metadata()
+        }
+    }
+
+    fn read_link_secure<P: AsRef<Path>>(
+        &self,
+        path: P,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<PathBuf> {
+        let (subdir, fname) = prepare_inner_operation(self, path.as_ref(), lookup_flags)?;
+
+        if let Some(fname) = fname {
+            subdir.as_ref().unwrap_or(self).read_link(fname)
+        } else {
+            Err(std::io::Error::from_raw_os_error(libc::EINVAL))
+        }
+    }
+
+    fn symlink_secure<P: AsRef<Path>, R: openat::AsPath>(
+        &self,
+        path: P,
+        value: R,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()> {
+        let (subdir, fname) = prepare_inner_operation(self, path.as_ref(), lookup_flags)?;
+
+        if let Some(fname) = fname {
+            subdir.as_ref().unwrap_or(self).symlink(fname, value)
+        } else {
+            Err(std::io::Error::from_raw_os_error(libc::EEXIST))
+        }
+    }
+
+    fn local_rename_secure<P: AsRef<Path>, R: AsRef<Path>>(
+        &self,
+        old: P,
+        new: R,
+        lookup_flags: LookupFlags,
+    ) -> io::Result<()> {
+        rename_secure(self, old, self, new, lookup_flags)
+    }
+}
+
+pub fn hardlink_secure<P: AsRef<Path>, R: AsRef<Path>>(
+    old_dir: &Dir,
+    old: P,
+    new_dir: &Dir,
+    new: R,
+    lookup_flags: LookupFlags,
+) -> io::Result<()> {
+    let old = old.as_ref();
+
+    if old.ends_with("..") {
+        // As far as I can tell, there is no safe, cross-platform, race-free way to handle trailing
+        // ".." components in the "old" path.
+        return Err(std::io::Error::from_raw_os_error(libc::ENOTSUP));
+    }
+
+    let (old_subdir, old_fname) = prepare_inner_operation(old_dir, old, lookup_flags)?;
+    let old_subdir = old_subdir.as_ref().unwrap_or(old_dir);
+
+    let old_fname = if let Some(old_fname) = old_fname {
+        old_fname
+    } else {
+        // Since we checked for ".." above, this probably means that `old` was `/`
+        return Err(std::io::Error::from_raw_os_error(libc::ENOTSUP));
+    };
+
+    let (new_subdir, new_fname) = prepare_inner_operation(new_dir, new.as_ref(), lookup_flags)?;
+    let new_subdir = new_subdir.as_ref().unwrap_or(new_dir);
+
+    if let Some(new_fname) = new_fname {
+        openat::hardlink(old_subdir, old_fname, new_subdir, new_fname)
+    } else {
+        Err(std::io::Error::from_raw_os_error(libc::EEXIST))
+    }
+}
+
+pub fn rename_secure<P: AsRef<Path>, R: AsRef<Path>>(
+    old_dir: &Dir,
+    old: P,
+    new_dir: &Dir,
+    new: R,
+    lookup_flags: LookupFlags,
+) -> io::Result<()> {
+    let old = old.as_ref();
+
+    if old.ends_with("..") {
+        // As far as I can tell, there is no safe, cross-platform, race-free way to handle trailing
+        // ".." components in the "old" path.
+        return Err(std::io::Error::from_raw_os_error(libc::ENOTSUP));
+    }
+
+    let (old_subdir, old_fname) = prepare_inner_operation(old_dir, old, lookup_flags)?;
+    let old_subdir = old_subdir.as_ref().unwrap_or(old_dir);
+
+    let old_fname = if let Some(old_fname) = old_fname {
+        old_fname
+    } else {
+        // Since we checked for ".." above, this probably means that `old` was `/`
+        return Err(std::io::Error::from_raw_os_error(libc::ENOTSUP));
+    };
+
+    let (new_subdir, new_fname) = prepare_inner_operation(new_dir, new.as_ref(), lookup_flags)?;
+    let new_subdir = new_subdir.as_ref().unwrap_or(new_dir);
+
+    if let Some(new_fname) = new_fname {
+        openat::rename(old_subdir, old_fname, new_subdir, new_fname)
+    } else {
+        Err(std::io::Error::from_raw_os_error(libc::EEXIST))
+    }
+}
+
+fn prepare_inner_operation<'a>(
+    dir: &Dir,
+    mut path: &'a Path,
+    lookup_flags: LookupFlags,
+) -> io::Result<(Option<Dir>, Option<&'a OsStr>)> {
+    match path.strip_prefix("/") {
+        Ok(p) => {
+            if lookup_flags.contains(LookupFlags::IN_ROOT) {
+                // If we were given IN_ROOT, just trim the "/" prefix
+                path = p;
+
+                if path.as_os_str().is_empty() {
+                    // Just "/"
+                    return Ok((Some(dir.try_clone()?), None));
+                }
+            } else {
+                // By default, "/" is not allowed
+                return Err(std::io::Error::from_raw_os_error(libc::EXDEV));
+            }
+        }
+
+        // Not an absolute path
+        Err(_) => {
+            if path.as_os_str().is_empty() {
+                // Empty path -> ENOENT
+                return Err(std::io::Error::from_raw_os_error(libc::ENOENT));
+            }
+        }
+    }
+
+    // We now know that `path` is not empty, and it doesn't start with a "/"
+
+    if let Some(fname) = path.file_name() {
+        debug_assert!(!path.ends_with(".."));
+
+        // Because of the conditions listed above, path.parent() should never be None
+        let parent = path.parent().unwrap();
+
+        if parent.as_os_str().is_empty() {
+            // Though it might be empty, in which case we just reuse the existing directory
+            Ok((None, Some(fname)))
+        } else {
+            Ok((Some(dir.sub_dir_secure(parent, lookup_flags)?), Some(fname)))
+        }
+    } else {
+        debug_assert!(path.ends_with(".."));
+
+        // So this is a path like "a/b/..". We can't really get a (containing directory, filename)
+        // pair out of this.
+
+        if lookup_flags.contains(LookupFlags::ALLOW_PARENT_COMPONENTS) {
+            // Resolve the entire path
+            Ok((Some(dir.sub_dir_secure(path, lookup_flags)?), None))
+        } else {
+            Err(std::io::Error::from_raw_os_error(libc::EXDEV))
+        }
     }
 }
 
