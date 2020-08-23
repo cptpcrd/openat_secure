@@ -23,9 +23,6 @@ pub fn get_symloop_max() -> Option<usize> {
     }
 }
 
-// Linux's default (it seems get_symloop_max() always fails on glibc)
-pub const DEFAULT_SYMLOOP_MAX: usize = 40;
-
 #[cfg(test)]
 mod tests {
     use super::*;
