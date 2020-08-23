@@ -240,3 +240,67 @@ fn test_symlinks() {
         Path::new("/b")
     );
 }
+
+#[test]
+fn test_remove_file() {
+    let tmpdir = tempfile::tempdir().unwrap();
+    let tmpdir = Dir::open(tmpdir.path()).unwrap();
+
+    tmpdir.new_file("a", 0o666).unwrap();
+    tmpdir.create_dir("b", 0o777).unwrap();
+
+    // Escapes
+    assert_eq!(
+        tmpdir
+            .remove_file_secure("/a", LookupFlags::empty())
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::EXDEV)
+    );
+    assert_eq!(
+        tmpdir
+            .remove_file_secure("../a", LookupFlags::empty())
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::EXDEV)
+    );
+
+    // EISDIR
+    assert_eq!(
+        tmpdir
+            .remove_file_secure("/", LookupFlags::IN_ROOT)
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::EISDIR)
+    );
+    assert_eq!(
+        tmpdir
+            .remove_file_secure("b/", LookupFlags::IN_ROOT)
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::EISDIR)
+    );
+    assert_eq!(
+        tmpdir
+            .remove_file_secure(
+                "b/..",
+                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
+            )
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::EISDIR)
+    );
+
+    // ENOTDIR
+    assert_eq!(
+        tmpdir
+            .remove_file_secure("a/", LookupFlags::IN_ROOT)
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::ENOTDIR)
+    );
+
+    tmpdir
+        .remove_file_secure("a", LookupFlags::empty())
+        .unwrap();
+}
