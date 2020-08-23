@@ -25,9 +25,8 @@ fn test_basic_in_root() {
 }
 
 fn test_basic_in_root_generic(base_flags: LookupFlags) {
-    let tmpdir_ = tempfile::tempdir().unwrap();
-    let tmpdir = Dir::open(tmpdir_.path()).unwrap();
-    std::mem::forget(tmpdir_);
+    let tmpdir = tempfile::tempdir().unwrap();
+    let tmpdir = Dir::open(tmpdir.path()).unwrap();
 
     tmpdir.create_dir("a", 0o777).unwrap();
     tmpdir.create_dir("a/b", 0o777).unwrap();
