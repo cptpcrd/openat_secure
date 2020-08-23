@@ -44,7 +44,7 @@ bitflags! {
 }
 
 pub trait DirSecureExt {
-    fn parent(&self) -> io::Result<Option<Dir>>;
+    fn parent_secure(&self) -> io::Result<Option<Dir>>;
 
     fn sub_dir_secure<P: AsRef<Path>>(&self, p: P, lookup_flags: LookupFlags) -> io::Result<Dir>;
 
@@ -85,7 +85,7 @@ impl DirSecureExt for Dir {
     /// This is the same as `dir.sub_dir("..")`, except that it returns `Ok(None)` if the returned
     /// directory would be the same as this directory (for example, if the directory is open to
     /// `/`).
-    fn parent(&self) -> io::Result<Option<Dir>> {
+    fn parent_secure(&self) -> io::Result<Option<Dir>> {
         let parent = self.sub_dir(unsafe { CStr::from_bytes_with_nul_unchecked(b"..\0") })?;
 
         Ok(if util::same_dir(self, &parent)? {
