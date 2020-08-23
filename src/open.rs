@@ -7,8 +7,10 @@ use std::path::{Component, Path};
 
 use openat::Dir;
 
-use crate::openat2;
 use crate::LookupFlags;
+
+#[cfg(target_os = "linux")]
+use crate::openat2;
 
 fn open_file_base(
     dirfd: RawFd,
