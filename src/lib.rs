@@ -495,7 +495,7 @@ fn prepare_inner_operation<'a>(
 
     // We now know that `path` is not empty, and it doesn't start with a "/"
 
-    if let Some(fname) = path.file_name() {
+    if let Some(fname) = util::path_basename(path) {
         debug_assert!(!path.ends_with(".."));
 
         // Because of the conditions listed above, path.parent() should never be None
