@@ -10,7 +10,7 @@ const O_TMPFILE: i32 = libc::O_TMPFILE as i32;
 
 // This is correct for every architecture except alpha, which
 // Rust does not support
-const SYS_OPENAT: libc::c_long = 437;
+const SYS_OPENAT2: libc::c_long = 437;
 
 bitflags! {
     pub struct ResolveFlags: u64 {
@@ -74,7 +74,7 @@ fn openat2_sys(dirfd: Option<RawFd>, path: &CStr, how: &OpenHow) -> io::Result<R
 
     let fd = unsafe {
         libc::syscall(
-            SYS_OPENAT,
+            SYS_OPENAT2,
             dirfd,
             path.as_ptr(),
             &mut raw_how as *mut RawOpenHow,
