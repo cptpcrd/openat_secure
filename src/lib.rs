@@ -481,6 +481,6 @@ fn open_file_secure(
     if let Some(d) = curdir {
         Ok(d.into_raw_fd())
     } else {
-        Ok(root_dir.sub_dir(".")?.into_raw_fd())
+        Ok(root_dir.try_clone()?.into_raw_fd())
     }
 }
