@@ -275,13 +275,6 @@ fn test_remove_file() {
     );
     assert_eq!(
         tmpdir
-            .remove_file_secure("b/", LookupFlags::IN_ROOT)
-            .unwrap_err()
-            .raw_os_error(),
-        Some(libc::EISDIR)
-    );
-    assert_eq!(
-        tmpdir
             .remove_file_secure(
                 "b/..",
                 LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
