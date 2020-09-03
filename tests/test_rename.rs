@@ -27,7 +27,7 @@ fn test_local_rename() {
     // Moving it under the symlink path fails without IN_ROOT
     assert_eq!(
         tmpdir
-            .local_rename_secure("a/c", "s/c", LookupFlags::ALLOW_PARENT_COMPONENTS)
+            .local_rename_secure("a/c", "s/c", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)
@@ -35,11 +35,7 @@ fn test_local_rename() {
 
     // Try again and it should succeed
     tmpdir
-        .local_rename_secure(
-            "a/c",
-            "s/c",
-            LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS,
-        )
+        .local_rename_secure("a/c", "s/c", LookupFlags::IN_ROOT)
         .unwrap();
 
     // But it didn't escape the root!
@@ -48,25 +44,21 @@ fn test_local_rename() {
     // Common failure cases
     assert_eq!(
         tmpdir
-            .local_rename_secure("a/..", "d", LookupFlags::ALLOW_PARENT_COMPONENTS)
+            .local_rename_secure("a/..", "d", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::ENOTSUP)
     );
     assert_eq!(
         tmpdir
-            .local_rename_secure(
-                "/",
-                "d",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .local_rename_secure("/", "d", LookupFlags::IN_ROOT)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::ENOTSUP)
     );
     assert_eq!(
         tmpdir
-            .local_rename_secure("c", "a/..", LookupFlags::ALLOW_PARENT_COMPONENTS)
+            .local_rename_secure("c", "a/..", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EEXIST)

@@ -36,12 +36,12 @@ fn test_basic_beneath_generic(base_flags: LookupFlags) {
     tmpdir.symlink("h", "c/").unwrap();
 
     // We can open "a", and it's not the same as the main directory
-    assert!(!same_dir(&tmpdir, &tmpdir.sub_dir_secure("a", base_flags).unwrap(),).unwrap());
+    assert!(!same_dir(&tmpdir, &tmpdir.sub_dir_secure("a", base_flags).unwrap()).unwrap());
     // Same with "a/."
-    assert!(!same_dir(&tmpdir, &tmpdir.sub_dir_secure("a/.", base_flags).unwrap(),).unwrap());
+    assert!(!same_dir(&tmpdir, &tmpdir.sub_dir_secure("a/.", base_flags).unwrap()).unwrap());
 
     // And "a/b"
-    assert!(!same_dir(&tmpdir, &tmpdir.sub_dir_secure("a/b", base_flags).unwrap(),).unwrap());
+    assert!(!same_dir(&tmpdir, &tmpdir.sub_dir_secure("a/b", base_flags).unwrap()).unwrap());
     // And "a/b/."
     assert!(!same_dir(
         &tmpdir,
@@ -49,34 +49,13 @@ fn test_basic_beneath_generic(base_flags: LookupFlags) {
     )
     .unwrap());
 
-    // But not "a/.."
-    assert_eq!(
-        tmpdir
-            .sub_dir_secure("a/..", base_flags)
-            .unwrap_err()
-            .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-    // Unless we specify ALLOW_PARENT_COMPONENTS (and then it's the same as the main directory
-    assert!(same_dir(
-        &tmpdir,
-        &tmpdir
-            .sub_dir_secure("a/..", base_flags | LookupFlags::ALLOW_PARENT_COMPONENTS)
-            .unwrap()
-    )
-    .unwrap());
+    // "a/..." is the same as the main directory
+    assert!(same_dir(&tmpdir, &tmpdir.sub_dir_secure("a/..", base_flags).unwrap()).unwrap());
 
     // "a/../.." fails no matter what
     assert_eq!(
         tmpdir
             .sub_dir_secure("a/../..", base_flags)
-            .unwrap_err()
-            .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-    assert_eq!(
-        tmpdir
-            .sub_dir_secure("a/../..", base_flags | LookupFlags::ALLOW_PARENT_COMPONENTS)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)
@@ -92,21 +71,7 @@ fn test_basic_beneath_generic(base_flags: LookupFlags) {
     );
     assert_eq!(
         tmpdir
-            .sub_dir_secure("..", base_flags | LookupFlags::ALLOW_PARENT_COMPONENTS)
-            .unwrap_err()
-            .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-    assert_eq!(
-        tmpdir
             .sub_dir_secure("/", base_flags)
-            .unwrap_err()
-            .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-    assert_eq!(
-        tmpdir
-            .sub_dir_secure("/", base_flags | LookupFlags::ALLOW_PARENT_COMPONENTS)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)
@@ -185,10 +150,7 @@ fn test_basic_beneath_generic(base_flags: LookupFlags) {
     // But we can't use "../../.." from there to escape
     assert_eq!(
         tmpdir
-            .sub_dir_secure(
-                "f/../../..",
-                base_flags | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .sub_dir_secure("f/../../..", base_flags)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)
@@ -198,18 +160,13 @@ fn test_basic_beneath_generic(base_flags: LookupFlags) {
     // And it's the same as the main directory
     assert!(same_dir(
         &tmpdir,
-        &tmpdir
-            .sub_dir_secure("a/b/g", base_flags | LookupFlags::ALLOW_PARENT_COMPONENTS)
-            .unwrap()
+        &tmpdir.sub_dir_secure("a/b/g", base_flags).unwrap()
     )
     .unwrap());
     // But we can't use ".." from there to escape
     assert_eq!(
         tmpdir
-            .sub_dir_secure(
-                "a/b/g/..",
-                base_flags | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .sub_dir_secure("a/b/g/..", base_flags)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)

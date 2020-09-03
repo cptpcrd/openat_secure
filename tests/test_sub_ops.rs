@@ -37,18 +37,14 @@ fn test_create_remove_dir() {
     );
     assert_eq!(
         tmpdir
-            .create_dir_secure("..", 0o777, LookupFlags::ALLOW_PARENT_COMPONENTS)
+            .create_dir_secure("..", 0o777, LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)
     );
     assert_eq!(
         tmpdir
-            .create_dir_secure(
-                "..",
-                0o777,
-                LookupFlags::ALLOW_PARENT_COMPONENTS | LookupFlags::IN_ROOT
-            )
+            .create_dir_secure("..", 0o777, LookupFlags::IN_ROOT)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EEXIST)
@@ -74,13 +70,6 @@ fn test_create_remove_dir() {
             .create_dir_secure("a/..", 0o777, LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-    assert_eq!(
-        tmpdir
-            .create_dir_secure("a/..", 0o777, LookupFlags::ALLOW_PARENT_COMPONENTS)
-            .unwrap_err()
-            .raw_os_error(),
         Some(libc::EEXIST)
     );
 
@@ -102,17 +91,14 @@ fn test_create_remove_dir() {
     );
     assert_eq!(
         tmpdir
-            .remove_dir_secure("..", LookupFlags::ALLOW_PARENT_COMPONENTS)
+            .remove_dir_secure("..", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)
     );
     assert_eq!(
         tmpdir
-            .remove_dir_secure(
-                "..",
-                LookupFlags::ALLOW_PARENT_COMPONENTS | LookupFlags::IN_ROOT
-            )
+            .remove_dir_secure("..", LookupFlags::IN_ROOT)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EBUSY)
@@ -138,29 +124,22 @@ fn test_create_remove_dir() {
             .remove_dir_secure("a/..", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-    assert_eq!(
-        tmpdir
-            .remove_dir_secure("a/..", LookupFlags::ALLOW_PARENT_COMPONENTS)
-            .unwrap_err()
-            .raw_os_error(),
         Some(libc::EBUSY)
     );
     assert_eq!(
         tmpdir
-            .remove_dir_secure("a/b/..", LookupFlags::ALLOW_PARENT_COMPONENTS)
+            .remove_dir_secure("a/b/..", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::ENOTEMPTY)
     );
 
     tmpdir
-        .remove_dir_secure("a/b", LookupFlags::ALLOW_PARENT_COMPONENTS)
+        .remove_dir_secure("a/b", LookupFlags::empty())
         .unwrap();
 
     tmpdir
-        .remove_dir_secure("a/../a", LookupFlags::ALLOW_PARENT_COMPONENTS)
+        .remove_dir_secure("a/../a", LookupFlags::empty())
         .unwrap();
 }
 
@@ -179,10 +158,7 @@ fn test_symlinks() {
     );
     assert_eq!(
         tmpdir
-            .read_link_secure(
-                "..",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .read_link_secure("..", LookupFlags::IN_ROOT)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EINVAL)
@@ -198,22 +174,14 @@ fn test_symlinks() {
     );
     assert_eq!(
         tmpdir
-            .symlink_secure(
-                "..",
-                "b",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .symlink_secure("..", "b", LookupFlags::IN_ROOT)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EEXIST)
     );
     assert_eq!(
         tmpdir
-            .symlink_secure(
-                "/",
-                "b",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .symlink_secure("/", "b", LookupFlags::IN_ROOT)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EEXIST)
@@ -221,11 +189,7 @@ fn test_symlinks() {
 
     // Create a symlink
     tmpdir
-        .symlink_secure(
-            "../a",
-            "/b",
-            LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS,
-        )
+        .symlink_secure("../a", "/b", LookupFlags::IN_ROOT)
         .unwrap();
 
     // Now read_link() it a bunch of ways
@@ -239,19 +203,13 @@ fn test_symlinks() {
     );
     assert_eq!(
         tmpdir
-            .read_link_secure(
-                "../a",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .read_link_secure("../a", LookupFlags::IN_ROOT)
             .unwrap(),
         Path::new("/b")
     );
     assert_eq!(
         tmpdir
-            .read_link_secure(
-                "/../a",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .read_link_secure("/../a", LookupFlags::IN_ROOT)
             .unwrap(),
         Path::new("/b")
     );
@@ -291,10 +249,7 @@ fn test_remove_file() {
     );
     assert_eq!(
         tmpdir
-            .remove_file_secure(
-                "b/..",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .remove_file_secure("b/..", LookupFlags::IN_ROOT)
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EISDIR)

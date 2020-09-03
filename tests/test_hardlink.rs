@@ -27,72 +27,41 @@ fn test_hardlink() {
 
     // Moving it under the symlink path fails without IN_ROOT
     assert_eq!(
-        hardlink_secure(&tmpdir, "a/b", &tmpdir, "s/c", LookupFlags::empty(),)
+        hardlink_secure(&tmpdir, "a/b", &tmpdir, "s/c", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)
     );
 
     // Try again and it should succeed
-    hardlink_secure(
-        &tmpdir,
-        "a/b",
-        &tmpdir,
-        "s/c",
-        LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS,
-    )
-    .unwrap();
+    hardlink_secure(&tmpdir, "a/b", &tmpdir, "s/c", LookupFlags::IN_ROOT).unwrap();
 
     // But it didn't escape the root!
     tmpdir.metadata("c").unwrap();
 
     // Common failure cases
     assert_eq!(
-        hardlink_secure(
-            &tmpdir,
-            "a/..",
-            &tmpdir,
-            "a/d",
-            LookupFlags::ALLOW_PARENT_COMPONENTS
-        )
-        .unwrap_err()
-        .raw_os_error(),
+        hardlink_secure(&tmpdir, "a/..", &tmpdir, "a/d", LookupFlags::empty())
+            .unwrap_err()
+            .raw_os_error(),
         Some(libc::ENOTSUP)
     );
     assert_eq!(
-        hardlink_secure(
-            &tmpdir,
-            "/",
-            &tmpdir,
-            "a/d",
-            LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS,
-        )
-        .unwrap_err()
-        .raw_os_error(),
+        hardlink_secure(&tmpdir, "/", &tmpdir, "a/d", LookupFlags::IN_ROOT)
+            .unwrap_err()
+            .raw_os_error(),
         Some(libc::ENOTSUP)
     );
     assert_eq!(
-        hardlink_secure(
-            &tmpdir,
-            "a/b",
-            &tmpdir,
-            "/",
-            LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS,
-        )
-        .unwrap_err()
-        .raw_os_error(),
+        hardlink_secure(&tmpdir, "a/b", &tmpdir, "/", LookupFlags::IN_ROOT)
+            .unwrap_err()
+            .raw_os_error(),
         Some(libc::EEXIST)
     );
     assert_eq!(
-        hardlink_secure(
-            &tmpdir,
-            "a/b",
-            &tmpdir,
-            "a/..",
-            LookupFlags::ALLOW_PARENT_COMPONENTS
-        )
-        .unwrap_err()
-        .raw_os_error(),
+        hardlink_secure(&tmpdir, "a/b", &tmpdir, "a/..", LookupFlags::empty())
+            .unwrap_err()
+            .raw_os_error(),
         Some(libc::EEXIST)
     );
 }

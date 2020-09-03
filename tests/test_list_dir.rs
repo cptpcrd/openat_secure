@@ -29,22 +29,14 @@ fn test_list_dir() {
     // Fails without IN_ROOT
     assert_eq!(
         tmpdir
-            .list_dir_secure("s", LookupFlags::ALLOW_PARENT_COMPONENTS)
+            .list_dir_secure("s", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EXDEV)
     );
 
     assert_eq!(
-        collect_entries(
-            tmpdir
-                .list_dir_secure(
-                    "s",
-                    LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-                )
-                .unwrap()
-        )
-        .unwrap(),
+        collect_entries(tmpdir.list_dir_secure("s", LookupFlags::IN_ROOT).unwrap()).unwrap(),
         root_entries
     );
 }

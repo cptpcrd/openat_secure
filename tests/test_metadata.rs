@@ -39,12 +39,7 @@ fn test_metadata() {
         &meta_root
     ));
     assert!(same_meta(
-        &tmpdir
-            .metadata_secure(
-                "..",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
-            .unwrap(),
+        &tmpdir.metadata_secure("..", LookupFlags::IN_ROOT).unwrap(),
         &meta_root
     ));
 
@@ -58,29 +53,20 @@ fn test_metadata() {
     ));
     assert!(same_meta(
         &tmpdir
-            .metadata_secure(
-                "../a",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .metadata_secure("../a", LookupFlags::IN_ROOT)
             .unwrap(),
         &meta_a
     ));
 
     assert!(same_meta(
         &tmpdir
-            .metadata_secure(
-                "../a",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .metadata_secure("../a", LookupFlags::IN_ROOT)
             .unwrap(),
         &meta_a
     ));
     assert!(same_meta(
         &tmpdir
-            .metadata_secure(
-                "/../a",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .metadata_secure("/../a", LookupFlags::IN_ROOT)
             .unwrap(),
         &meta_a
     ));
@@ -97,10 +83,7 @@ fn test_metadata() {
     ));
     assert!(same_meta(
         &tmpdir
-            .metadata_secure(
-                "../a/b",
-                LookupFlags::IN_ROOT | LookupFlags::ALLOW_PARENT_COMPONENTS
-            )
+            .metadata_secure("../a/b", LookupFlags::IN_ROOT)
             .unwrap(),
         &meta_a_b
     ));

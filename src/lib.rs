@@ -22,11 +22,6 @@ bitflags! {
         /// When resolving below a directory, act as if the process had `chroot()`ed to that
         /// directory, and treat `/`, `..`, and symlinks accordingly.
         const IN_ROOT = 2;
-        /// Allow `..` components in paths and symlinks (may be disallowed by default).
-        ///
-        /// This may require large numbers of file descriptors on some systems (which is why they
-        /// may not be allowed by default).
-        const ALLOW_PARENT_COMPONENTS = 4;
         /// Don't cross filesystem boundaries.
         ///
         /// On Linux, this may or may not include bind mounts by default.
@@ -525,11 +520,6 @@ fn prepare_inner_operation<'a>(
         // So this is a path like "a/b/..". We can't really get a (containing directory, filename)
         // pair out of this.
 
-        if lookup_flags.contains(LookupFlags::ALLOW_PARENT_COMPONENTS) {
-            // Resolve the entire path
-            Ok((Some(dir.sub_dir_secure(path, lookup_flags)?), None))
-        } else {
-            Err(std::io::Error::from_raw_os_error(libc::EXDEV))
-        }
+        Ok((Some(dir.sub_dir_secure(path, lookup_flags)?), None))
     }
 }

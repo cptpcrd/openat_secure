@@ -49,12 +49,6 @@ pub fn open_file_secure(
     if !(lookup_flags.contains(LookupFlags::NO_XDEV)
         && lookup_flags.contains(LookupFlags::XDEV_BIND_OK))
     {
-        if !lookup_flags.contains(LookupFlags::ALLOW_PARENT_COMPONENTS)
-            && path.components().any(|c| c == Component::ParentDir)
-        {
-            return Err(io::Error::from_raw_os_error(libc::EXDEV));
-        }
-
         let mut open_how = openat2::OpenHow::new(final_flags);
         open_how.mode = Some(mode);
         // Disable magic link resolution by default -- no good can come
@@ -126,10 +120,6 @@ pub fn open_file_secure(
                 return Err(io::Error::from_raw_os_error(libc::EXDEV));
             }
         } else if fname.as_bytes() == b".." {
-            if !lookup_flags.contains(LookupFlags::ALLOW_PARENT_COMPONENTS) {
-                return Err(io::Error::from_raw_os_error(libc::EXDEV));
-            }
-
             if let Some(newdir) = parents.pop() {
                 curdir = newdir;
             } else if !lookup_flags.contains(LookupFlags::IN_ROOT) {
@@ -165,9 +155,7 @@ pub fn open_file_secure(
                         // Final component
                         return Ok(file.into_raw_fd());
                     } else {
-                        if lookup_flags.contains(LookupFlags::ALLOW_PARENT_COMPONENTS) {
-                            parents.push(curdir.take());
-                        }
+                        parents.push(curdir.take());
 
                         curdir = Some(unsafe { Dir::from_raw_fd(file.into_raw_fd()) });
                         curdir_ref = curdir.as_ref().unwrap();
