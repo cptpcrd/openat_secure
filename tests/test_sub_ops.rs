@@ -14,6 +14,11 @@ fn test_create_remove_dir() {
         .create_dir_secure("a", 0o777, LookupFlags::empty())
         .unwrap();
 
+    // And a subdirectory
+    tmpdir
+        .create_dir_secure("a/b", 0o777, LookupFlags::empty())
+        .unwrap();
+
     // Test for basic failure conditions of create_dir_secure()
     assert_eq!(
         tmpdir
@@ -140,8 +145,19 @@ fn test_create_remove_dir() {
             .remove_dir_secure("a/..", LookupFlags::ALLOW_PARENT_COMPONENTS)
             .unwrap_err()
             .raw_os_error(),
+        Some(libc::EBUSY)
+    );
+    assert_eq!(
+        tmpdir
+            .remove_dir_secure("a/b/..", LookupFlags::ALLOW_PARENT_COMPONENTS)
+            .unwrap_err()
+            .raw_os_error(),
         Some(libc::ENOTEMPTY)
     );
+
+    tmpdir
+        .remove_dir_secure("a/b", LookupFlags::ALLOW_PARENT_COMPONENTS)
+        .unwrap();
 
     tmpdir
         .remove_dir_secure("a/../a", LookupFlags::ALLOW_PARENT_COMPONENTS)

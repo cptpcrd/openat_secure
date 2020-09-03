@@ -306,13 +306,17 @@ impl DirSecureExt for Dir {
         if let Some(fname) = fname {
             subdir.as_ref().unwrap_or(self).remove_dir(fname)
         } else {
-            Err(std::io::Error::from_raw_os_error(
-                if path == Path::new("/") || path == Path::new("..") {
-                    libc::EBUSY
-                } else {
-                    libc::ENOTEMPTY
-                },
-            ))
+            let is_same = if let Some(subdir) = subdir.as_ref() {
+                util::same_dir(self, subdir)?
+            } else {
+                true
+            };
+
+            Err(std::io::Error::from_raw_os_error(if is_same {
+                libc::EBUSY
+            } else {
+                libc::ENOTEMPTY
+            }))
         }
     }
 
