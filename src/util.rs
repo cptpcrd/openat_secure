@@ -33,12 +33,15 @@ pub fn path_basename(path: &Path) -> Option<&OsStr> {
         return None;
     }
 
+    // Get a byte array
     let mut bytes = path.as_os_str().as_bytes();
 
+    // Only leave one trailing slash
     while bytes.ends_with(b"//") {
         bytes = &bytes[..bytes.len() - 1];
     }
 
+    // Now find the last trailing slash that isn't at the end
     let start_index = match bytes.iter().take(bytes.len() - 1).rposition(|&c| c == b'/') {
         Some(i) => i + 1,
         None => 0,
