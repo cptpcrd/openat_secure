@@ -14,6 +14,11 @@ fn same_dir(d1: &openat::Dir, d2: &openat::Dir) -> std::io::Result<bool> {
 }
 
 #[test]
+fn test_lookup_flags() {
+    assert_eq!(LookupFlags::empty(), LookupFlags::default());
+}
+
+#[test]
 fn test_basic_in_root() {
     test_basic_in_root_generic(LookupFlags::empty());
 
@@ -140,5 +145,14 @@ fn test_basic_in_root_generic(base_flags: LookupFlags) {
             .unwrap_err()
             .raw_os_error(),
         Some(libc::ELOOP)
+    );
+
+    // ENOENT if the file does not exist
+    assert_eq!(
+        tmpdir
+            .sub_dir_secure("NOEXIST", base_flags)
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::ENOENT)
     );
 }

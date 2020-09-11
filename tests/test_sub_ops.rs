@@ -4,6 +4,13 @@ use openat::Dir;
 
 use openat_secure::{DirSecureExt, LookupFlags};
 
+fn unwrap_err<T, E>(r: Result<T, E>) -> E {
+    match r {
+        Ok(_) => panic!("unwrap_err() on Ok() value"),
+        Err(e) => e,
+    }
+}
+
 #[test]
 fn test_create_remove_dir() {
     let tmpdir = tempfile::tempdir().unwrap();
@@ -217,5 +224,44 @@ fn test_remove_file() {
         .unwrap();
     tmpdir
         .remove_file_secure("../d", LookupFlags::empty())
+        .unwrap();
+}
+
+#[test]
+fn test_open_file() {
+    let tmpdir = tempfile::tempdir().unwrap();
+    let tmpdir = Dir::open(tmpdir.path()).unwrap();
+
+    assert_eq!(
+        unwrap_err(tmpdir.metadata("a")).raw_os_error(),
+        Some(libc::ENOENT)
+    );
+
+    tmpdir
+        .update_file_secure("a", 0o666, LookupFlags::empty())
+        .unwrap();
+    tmpdir.metadata("a").unwrap();
+    tmpdir
+        .update_file_secure("a", 0o666, LookupFlags::empty())
+        .unwrap();
+
+    tmpdir.remove_file("a").unwrap();
+
+    tmpdir
+        .write_file_secure("a", 0o666, LookupFlags::empty())
+        .unwrap();
+    tmpdir.metadata("a").unwrap();
+    tmpdir
+        .write_file_secure("a", 0o666, LookupFlags::empty())
+        .unwrap();
+
+    tmpdir.remove_file("a").unwrap();
+
+    tmpdir
+        .append_file_secure("a", 0o666, LookupFlags::empty())
+        .unwrap();
+    tmpdir.metadata("a").unwrap();
+    tmpdir
+        .append_file_secure("a", 0o666, LookupFlags::empty())
         .unwrap();
 }
