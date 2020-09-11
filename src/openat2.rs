@@ -156,14 +156,12 @@ mod tests {
 
     #[test]
     fn test_openat2() {
-        if openat2(None, "", &OpenHow::new(libc::O_RDONLY))
-            .unwrap_err()
-            .raw_os_error()
-            == Some(libc::ENOENT)
-        {
-            test_openat2_present();
-        } else {
-            test_openat2_absent();
+        let err = openat2(None, "", &OpenHow::new(libc::O_RDONLY)).unwrap_err();
+
+        match err.raw_os_error() {
+            Some(libc::ENOENT) => test_openat2_present(),
+            Some(libc::ENOSYS) => test_openat2_absent(),
+            _ => panic!("Unexpected error {:?}", err),
         }
     }
 
