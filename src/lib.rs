@@ -479,7 +479,7 @@ fn prepare_inner_operation<'a>(
 
             if path.as_os_str().is_empty() {
                 // Just "/"
-                return Ok((Some(dir.try_clone()?), None));
+                return Ok((None, None));
             }
         }
 
