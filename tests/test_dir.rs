@@ -15,13 +15,11 @@ fn same_dir(d1: &openat::Dir, d2: &openat::Dir) -> std::io::Result<bool> {
 
 #[test]
 fn test_basic_in_root() {
-    test_basic_in_root_generic(LookupFlags::IN_ROOT);
+    test_basic_in_root_generic(LookupFlags::empty());
 
     // On Linux, this specific flag combination prevents optimization using openat2()
     #[cfg(target_os = "linux")]
-    test_basic_in_root_generic(
-        LookupFlags::IN_ROOT | LookupFlags::NO_XDEV | LookupFlags::XDEV_BIND_OK,
-    );
+    test_basic_in_root_generic(LookupFlags::NO_XDEV | LookupFlags::XDEV_BIND_OK);
 }
 
 fn test_basic_in_root_generic(base_flags: LookupFlags) {

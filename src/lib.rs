@@ -19,9 +19,6 @@ bitflags! {
     pub struct LookupFlags: u64 {
         /// Don't resolve symbolic links; fail with `ELOOP` whenever one is encountered
         const NO_SYMLINKS = 1;
-        /// When resolving below a directory, act as if the process had `chroot()`ed to that
-        /// directory, and treat `/`, `..`, and symlinks accordingly.
-        const IN_ROOT = 2;
         /// Don't cross filesystem boundaries.
         ///
         /// On Linux, this may or may not include bind mounts by default.
@@ -477,17 +474,12 @@ fn prepare_inner_operation<'a>(
 ) -> io::Result<(Option<Dir>, Option<&'a OsStr>)> {
     match path.strip_prefix("/") {
         Ok(p) => {
-            if lookup_flags.contains(LookupFlags::IN_ROOT) {
-                // If we were given IN_ROOT, just trim the "/" prefix
-                path = p;
+            // Trim the "/" prefix
+            path = p;
 
-                if path.as_os_str().is_empty() {
-                    // Just "/"
-                    return Ok((Some(dir.try_clone()?), None));
-                }
-            } else {
-                // By default, "/" is not allowed
-                return Err(std::io::Error::from_raw_os_error(libc::EXDEV));
+            if path.as_os_str().is_empty() {
+                // Just "/"
+                return Ok((Some(dir.try_clone()?), None));
             }
         }
 

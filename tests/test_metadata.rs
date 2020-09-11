@@ -35,11 +35,11 @@ fn test_metadata() {
     let meta_a_b = tmpdir.metadata("a/b").unwrap();
 
     assert!(same_meta(
-        &tmpdir.metadata_secure("/", LookupFlags::IN_ROOT).unwrap(),
+        &tmpdir.metadata_secure("/", LookupFlags::empty()).unwrap(),
         &meta_root
     ));
     assert!(same_meta(
-        &tmpdir.metadata_secure("..", LookupFlags::IN_ROOT).unwrap(),
+        &tmpdir.metadata_secure("..", LookupFlags::empty()).unwrap(),
         &meta_root
     ));
 
@@ -48,25 +48,25 @@ fn test_metadata() {
         &meta_a
     ));
     assert!(same_meta(
-        &tmpdir.metadata_secure("/a", LookupFlags::IN_ROOT).unwrap(),
+        &tmpdir.metadata_secure("/a", LookupFlags::empty()).unwrap(),
         &meta_a
     ));
     assert!(same_meta(
         &tmpdir
-            .metadata_secure("../a", LookupFlags::IN_ROOT)
+            .metadata_secure("../a", LookupFlags::empty())
             .unwrap(),
         &meta_a
     ));
 
     assert!(same_meta(
         &tmpdir
-            .metadata_secure("../a", LookupFlags::IN_ROOT)
+            .metadata_secure("../a", LookupFlags::empty())
             .unwrap(),
         &meta_a
     ));
     assert!(same_meta(
         &tmpdir
-            .metadata_secure("/../a", LookupFlags::IN_ROOT)
+            .metadata_secure("/../a", LookupFlags::empty())
             .unwrap(),
         &meta_a
     ));
@@ -77,13 +77,13 @@ fn test_metadata() {
     ));
     assert!(same_meta(
         &tmpdir
-            .metadata_secure("/a/b", LookupFlags::IN_ROOT)
+            .metadata_secure("/a/b", LookupFlags::empty())
             .unwrap(),
         &meta_a_b
     ));
     assert!(same_meta(
         &tmpdir
-            .metadata_secure("../a/b", LookupFlags::IN_ROOT)
+            .metadata_secure("../a/b", LookupFlags::empty())
             .unwrap(),
         &meta_a_b
     ));
@@ -91,13 +91,5 @@ fn test_metadata() {
     assert_eq!(
         unwrap_err(tmpdir.metadata_secure("a/b/", LookupFlags::empty())).raw_os_error(),
         Some(libc::ENOTDIR)
-    );
-    assert_eq!(
-        unwrap_err(tmpdir.metadata_secure("/a/b", LookupFlags::empty())).raw_os_error(),
-        Some(libc::EXDEV)
-    );
-    assert_eq!(
-        unwrap_err(tmpdir.metadata_secure("../a/b", LookupFlags::empty())).raw_os_error(),
-        Some(libc::EXDEV)
     );
 }

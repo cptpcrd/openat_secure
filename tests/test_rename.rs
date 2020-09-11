@@ -24,21 +24,12 @@ fn test_local_rename() {
         .local_rename_secure("a/b", "a/c", LookupFlags::empty())
         .unwrap();
 
-    // Moving it under the symlink path fails without IN_ROOT
-    assert_eq!(
-        tmpdir
-            .local_rename_secure("a/c", "s/c", LookupFlags::empty())
-            .unwrap_err()
-            .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-
-    // Try again and it should succeed
+    // Renaming it under the symlink should succeed
     tmpdir
-        .local_rename_secure("a/c", "s/c", LookupFlags::IN_ROOT)
+        .local_rename_secure("a/c", "s/c", LookupFlags::empty())
         .unwrap();
 
-    // But it didn't escape the root!
+    // But it won't escape the root!
     tmpdir.metadata("c").unwrap();
 
     // Common failure cases
@@ -51,7 +42,7 @@ fn test_local_rename() {
     );
     assert_eq!(
         tmpdir
-            .local_rename_secure("/", "d", LookupFlags::IN_ROOT)
+            .local_rename_secure("/", "d", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::ENOTSUP)

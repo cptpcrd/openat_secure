@@ -53,7 +53,8 @@ pub fn open_file_secure(
         open_how.mode = Some(mode);
         // Disable magic link resolution by default -- no good can come
         // from magic links!
-        open_how.resolve_flags = openat2::ResolveFlags::NO_MAGICLINKS;
+        open_how.resolve_flags =
+            openat2::ResolveFlags::NO_MAGICLINKS | openat2::ResolveFlags::IN_ROOT;
 
         if lookup_flags.contains(LookupFlags::NO_SYMLINKS) {
             open_how
@@ -64,16 +65,6 @@ pub fn open_file_secure(
             open_how
                 .resolve_flags
                 .insert(openat2::ResolveFlags::NO_XDEV);
-        }
-
-        if lookup_flags.contains(LookupFlags::IN_ROOT) {
-            open_how
-                .resolve_flags
-                .insert(openat2::ResolveFlags::IN_ROOT);
-        } else {
-            open_how
-                .resolve_flags
-                .insert(openat2::ResolveFlags::BENEATH);
         }
 
         match openat2::openat2(Some(root_dir.as_raw_fd()), path, &open_how) {
@@ -113,17 +104,11 @@ pub fn open_file_secure(
 
     while let Some(fname) = components.pop_front() {
         if fname.as_bytes() == b"/" {
-            if lookup_flags.contains(LookupFlags::IN_ROOT) {
-                parents.clear();
-                curdir = None;
-            } else {
-                return Err(io::Error::from_raw_os_error(libc::EXDEV));
-            }
+            parents.clear();
+            curdir = None;
         } else if fname.as_bytes() == b".." {
             if let Some(newdir) = parents.pop() {
                 curdir = newdir;
-            } else if !lookup_flags.contains(LookupFlags::IN_ROOT) {
-                return Err(io::Error::from_raw_os_error(libc::EXDEV));
             }
         } else {
             let mut curdir_ref = if let Some(curdir_ref) = curdir.as_ref() {

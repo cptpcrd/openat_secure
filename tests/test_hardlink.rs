@@ -25,16 +25,8 @@ fn test_hardlink() {
     // Another one
     hardlink_secure(&tmpdir, "a/b", &tmpdir, "d", LookupFlags::empty()).unwrap();
 
-    // Moving it under the symlink path fails without IN_ROOT
-    assert_eq!(
-        hardlink_secure(&tmpdir, "a/b", &tmpdir, "s/c", LookupFlags::empty())
-            .unwrap_err()
-            .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-
-    // Try again and it should succeed
-    hardlink_secure(&tmpdir, "a/b", &tmpdir, "s/c", LookupFlags::IN_ROOT).unwrap();
+    // Moving it under the symlink path should succeed
+    hardlink_secure(&tmpdir, "a/b", &tmpdir, "s/c", LookupFlags::empty()).unwrap();
 
     // But it didn't escape the root!
     tmpdir.metadata("c").unwrap();
@@ -47,13 +39,13 @@ fn test_hardlink() {
         Some(libc::ENOTSUP)
     );
     assert_eq!(
-        hardlink_secure(&tmpdir, "/", &tmpdir, "a/d", LookupFlags::IN_ROOT)
+        hardlink_secure(&tmpdir, "/", &tmpdir, "a/d", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::ENOTSUP)
     );
     assert_eq!(
-        hardlink_secure(&tmpdir, "a/b", &tmpdir, "/", LookupFlags::IN_ROOT)
+        hardlink_secure(&tmpdir, "a/b", &tmpdir, "/", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::EEXIST)

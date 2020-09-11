@@ -26,17 +26,8 @@ fn test_list_dir() {
 
     let root_entries = collect_entries(tmpdir.list_dir(".").unwrap()).unwrap();
 
-    // Fails without IN_ROOT
     assert_eq!(
-        tmpdir
-            .list_dir_secure("s", LookupFlags::empty())
-            .unwrap_err()
-            .raw_os_error(),
-        Some(libc::EXDEV)
-    );
-
-    assert_eq!(
-        collect_entries(tmpdir.list_dir_secure("s", LookupFlags::IN_ROOT).unwrap()).unwrap(),
+        collect_entries(tmpdir.list_dir_secure("s", LookupFlags::empty()).unwrap()).unwrap(),
         root_entries
     );
 }
