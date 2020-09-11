@@ -45,7 +45,7 @@ fn test_local_rename() {
             .local_rename_secure("/", "d", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
-        Some(libc::ENOTSUP)
+        Some(libc::EBUSY)
     );
     assert_eq!(
         tmpdir

@@ -42,7 +42,7 @@ fn test_hardlink() {
         hardlink_secure(&tmpdir, "/", &tmpdir, "a/d", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
-        Some(libc::ENOTSUP)
+        Some(libc::EBUSY)
     );
     assert_eq!(
         hardlink_secure(&tmpdir, "a/b", &tmpdir, "/", LookupFlags::empty())

@@ -418,8 +418,8 @@ pub fn hardlink_secure<P: AsRef<Path>, R: AsRef<Path>>(
     let old_fname = if let Some(old_fname) = old_fname {
         old_fname
     } else {
-        // Since we checked for ".." above, this probably means that `old` was `/`
-        return Err(std::io::Error::from_raw_os_error(libc::ENOTSUP));
+        // Since we checked for ".." above, this means that `old` was `/`
+        return Err(std::io::Error::from_raw_os_error(libc::EBUSY));
     };
 
     let (new_subdir, new_fname) = prepare_inner_operation(new_dir, new.as_ref(), lookup_flags)?;
@@ -453,8 +453,8 @@ pub fn rename_secure<P: AsRef<Path>, R: AsRef<Path>>(
     let old_fname = if let Some(old_fname) = old_fname {
         old_fname
     } else {
-        // Since we checked for ".." above, this probably means that `old` was `/`
-        return Err(std::io::Error::from_raw_os_error(libc::ENOTSUP));
+        // Since we checked for ".." above, this means that `old` was `/`
+        return Err(std::io::Error::from_raw_os_error(libc::EBUSY));
     };
 
     let (new_subdir, new_fname) = prepare_inner_operation(new_dir, new.as_ref(), lookup_flags)?;
