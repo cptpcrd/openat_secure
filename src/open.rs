@@ -109,12 +109,6 @@ pub fn open_file_secure(
         } else if fname.as_bytes() == b".." {
             curdir = parents.pop();
         } else {
-            let mut curdir_ref = if let Some(curdir_ref) = curdir.as_ref() {
-                curdir_ref
-            } else {
-                root_dir
-            };
-
             let cur_flags = if components.is_empty() {
                 final_flags
             } else {
@@ -122,7 +116,7 @@ pub fn open_file_secure(
             };
 
             let open_err = match open_file_base(
-                curdir_ref.as_raw_fd(),
+                curdir.as_ref().unwrap_or(root_dir).as_raw_fd(),
                 &fname,
                 cur_flags | libc::O_NOFOLLOW | libc::O_CLOEXEC,
                 mode,
@@ -148,7 +142,6 @@ pub fn open_file_secure(
 
                         // Advance to the new directory
                         curdir = Some(unsafe { Dir::from_raw_fd(file.into_raw_fd()) });
-                        curdir_ref = curdir.as_ref().unwrap();
                         None
                     }
                 }
@@ -182,7 +175,11 @@ pub fn open_file_secure(
 
                     // Let's try to `readlink()` it.
 
-                    let target = match curdir_ref.read_link(fname.as_c_str()) {
+                    let target = match curdir
+                        .as_ref()
+                        .unwrap_or(root_dir)
+                        .read_link(fname.as_c_str())
+                    {
                         // Successfully read the symlink
                         Ok(t) => t,
 
