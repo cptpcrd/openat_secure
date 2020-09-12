@@ -291,9 +291,7 @@ impl DirSecureExt for Dir {
         path: P,
         lookup_flags: LookupFlags,
     ) -> io::Result<()> {
-        let path = path.as_ref();
-
-        let (subdir, fname) = prepare_inner_operation(self, path, lookup_flags)?;
+        let (subdir, fname) = prepare_inner_operation(self, path.as_ref(), lookup_flags)?;
 
         if let Some(fname) = fname {
             subdir.as_ref().unwrap_or(self).remove_dir(fname)
