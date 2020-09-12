@@ -153,7 +153,7 @@ pub fn open_file_secure(
 
                 let open_errno = open_err.raw_os_error().unwrap_or(0);
 
-                #[cfg(target_os = "freebsd")]
+                #[cfg(any(target_os = "freebsd", target_os = "dragonfly"))]
                 let open_errno = if open_errno == libc::EMLINK {
                     libc::ELOOP
                 } else {
