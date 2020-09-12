@@ -85,7 +85,7 @@ pub fn open_file_secure(
     };
 
     let mut curdir = None;
-    let mut parents: Vec<Option<Dir>> = Vec::new();
+    let mut parents: Vec<Dir> = Vec::new();
 
     let mut n_symlinks_found = 0;
     let n_symlinks_max = if lookup_flags.contains(LookupFlags::NO_SYMLINKS) {
@@ -107,9 +107,7 @@ pub fn open_file_secure(
             parents.clear();
             curdir = None;
         } else if fname.as_bytes() == b".." {
-            if let Some(newdir) = parents.pop() {
-                curdir = newdir;
-            }
+            curdir = parents.pop();
         } else {
             let mut curdir_ref = if let Some(curdir_ref) = curdir.as_ref() {
                 curdir_ref
@@ -140,8 +138,15 @@ pub fn open_file_secure(
                         // Final component
                         return Ok(file.into_raw_fd());
                     } else {
-                        parents.push(curdir.take());
+                        // Save the previous directory
+                        if let Some(olddir) = curdir {
+                            parents.push(olddir);
+                        } else {
+                            // If curdir is None, then parents should be empty
+                            debug_assert!(parents.is_empty());
+                        }
 
+                        // Advance to the new directory
                         curdir = Some(unsafe { Dir::from_raw_fd(file.into_raw_fd()) });
                         curdir_ref = curdir.as_ref().unwrap();
                         None
