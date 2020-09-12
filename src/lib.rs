@@ -408,22 +408,20 @@ pub fn hardlink_secure<P: AsRef<Path>, R: AsRef<Path>>(
     new: R,
     lookup_flags: LookupFlags,
 ) -> io::Result<()> {
-    let old = old.as_ref();
-
-    if old.ends_with("..") {
-        // As far as I can tell, there is no safe, cross-platform, race-free way to handle trailing
-        // ".." components in the "old" path.
-        return Err(std::io::Error::from_raw_os_error(libc::ENOTSUP));
-    }
-
-    let (old_subdir, old_fname) = prepare_inner_operation(old_dir, old, lookup_flags)?;
+    let (old_subdir, old_fname) = prepare_inner_operation(old_dir, old.as_ref(), lookup_flags)?;
     let old_subdir = old_subdir.as_ref().unwrap_or(old_dir);
 
     let old_fname = if let Some(old_fname) = old_fname {
         old_fname
     } else {
-        // Since we checked for ".." above, this means that `old` was `/`
-        return Err(std::io::Error::from_raw_os_error(libc::EBUSY));
+        return Err(std::io::Error::from_raw_os_error(
+            if util::same_dir(old_dir, &old_subdir)? {
+                libc::EBUSY
+            } else {
+                // As far as I can tell, there is no safe, cross-platform, race-free way to handle this case.
+                libc::ENOTSUP
+            },
+        ));
     };
 
     let (new_subdir, new_fname) = prepare_inner_operation(new_dir, new.as_ref(), lookup_flags)?;
@@ -432,6 +430,7 @@ pub fn hardlink_secure<P: AsRef<Path>, R: AsRef<Path>>(
     if let Some(new_fname) = new_fname {
         openat::hardlink(old_subdir, old_fname, new_subdir, new_fname)
     } else {
+        // The "new" path cannot exist
         Err(std::io::Error::from_raw_os_error(libc::EEXIST))
     }
 }
@@ -443,22 +442,20 @@ pub fn rename_secure<P: AsRef<Path>, R: AsRef<Path>>(
     new: R,
     lookup_flags: LookupFlags,
 ) -> io::Result<()> {
-    let old = old.as_ref();
-
-    if old.ends_with("..") {
-        // As far as I can tell, there is no safe, cross-platform, race-free way to handle trailing
-        // ".." components in the "old" path.
-        return Err(std::io::Error::from_raw_os_error(libc::ENOTSUP));
-    }
-
-    let (old_subdir, old_fname) = prepare_inner_operation(old_dir, old, lookup_flags)?;
+    let (old_subdir, old_fname) = prepare_inner_operation(old_dir, old.as_ref(), lookup_flags)?;
     let old_subdir = old_subdir.as_ref().unwrap_or(old_dir);
 
     let old_fname = if let Some(old_fname) = old_fname {
         old_fname
     } else {
-        // Since we checked for ".." above, this means that `old` was `/`
-        return Err(std::io::Error::from_raw_os_error(libc::EBUSY));
+        return Err(std::io::Error::from_raw_os_error(
+            if util::same_dir(old_dir, &old_subdir)? {
+                libc::EBUSY
+            } else {
+                // As far as I can tell, there is no safe, cross-platform, race-free way to handle this case.
+                libc::ENOTSUP
+            },
+        ));
     };
 
     let (new_subdir, new_fname) = prepare_inner_operation(new_dir, new.as_ref(), lookup_flags)?;
@@ -467,7 +464,14 @@ pub fn rename_secure<P: AsRef<Path>, R: AsRef<Path>>(
     if let Some(new_fname) = new_fname {
         openat::rename(old_subdir, old_fname, new_subdir, new_fname)
     } else {
-        Err(std::io::Error::from_raw_os_error(libc::EEXIST))
+        Err(std::io::Error::from_raw_os_error(
+            if util::same_dir(new_dir, &new_subdir)? {
+                libc::EBUSY
+            } else {
+                // We rewound up a directory; that means that the directory isn't empty
+                libc::ENOTEMPTY
+            },
+        ))
     }
 }
 

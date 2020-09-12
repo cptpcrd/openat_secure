@@ -15,6 +15,10 @@ fn test_hardlink() {
     tmpdir
         .new_file_secure("a/b", 0o666, LookupFlags::empty())
         .unwrap();
+    // And another directory inside it
+    tmpdir
+        .create_dir_secure("a/sub", 0o777, LookupFlags::empty())
+        .unwrap();
 
     // And a dangerous symlink
     tmpdir.symlink("s", "..").unwrap();
@@ -33,10 +37,16 @@ fn test_hardlink() {
 
     // Common failure cases
     assert_eq!(
-        hardlink_secure(&tmpdir, "a/..", &tmpdir, "a/d", LookupFlags::empty())
+        hardlink_secure(&tmpdir, "a/sub/..", &tmpdir, "a/d", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::ENOTSUP)
+    );
+    assert_eq!(
+        hardlink_secure(&tmpdir, "a/..", &tmpdir, "a/d", LookupFlags::empty())
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::EBUSY)
     );
     assert_eq!(
         hardlink_secure(&tmpdir, "/", &tmpdir, "a/d", LookupFlags::empty())

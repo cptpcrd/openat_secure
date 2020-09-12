@@ -15,6 +15,10 @@ fn test_local_rename() {
     tmpdir
         .new_file_secure("a/b", 0o666, LookupFlags::empty())
         .unwrap();
+    // And another directory inside it
+    tmpdir
+        .create_dir_secure("a/sub", 0o777, LookupFlags::empty())
+        .unwrap();
 
     // And a dangerous symlink
     tmpdir.symlink("s", "..").unwrap();
@@ -35,10 +39,17 @@ fn test_local_rename() {
     // Common failure cases
     assert_eq!(
         tmpdir
-            .local_rename_secure("a/..", "d", LookupFlags::empty())
+            .local_rename_secure("a/sub/..", "d", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
         Some(libc::ENOTSUP)
+    );
+    assert_eq!(
+        tmpdir
+            .local_rename_secure("a/..", "d", LookupFlags::empty())
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::EBUSY)
     );
     assert_eq!(
         tmpdir
@@ -49,9 +60,23 @@ fn test_local_rename() {
     );
     assert_eq!(
         tmpdir
+            .local_rename_secure("c", "a/sub/..", LookupFlags::empty())
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::ENOTEMPTY)
+    );
+    assert_eq!(
+        tmpdir
             .local_rename_secure("c", "a/..", LookupFlags::empty())
             .unwrap_err()
             .raw_os_error(),
-        Some(libc::EEXIST)
+        Some(libc::EBUSY)
+    );
+    assert_eq!(
+        tmpdir
+            .local_rename_secure("c", "/", LookupFlags::empty())
+            .unwrap_err()
+            .raw_os_error(),
+        Some(libc::EBUSY)
     );
 }
