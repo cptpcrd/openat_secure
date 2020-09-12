@@ -185,16 +185,16 @@ pub fn open_file_secure(
 
                         // EINVAL means it's not a symlink
                         Err(e) if e.raw_os_error() == Some(libc::EINVAL) => {
-                            return if open_errno == libc::ENOTDIR {
+                            return Err(if open_errno == libc::ENOTDIR {
                                 // All we knew was that it wasn't a directory, so it's probably
                                 // another file type.
-                                Err(open_err)
+                                open_err
                             } else {
                                 // We got ELOOP, indicating it *was* a symlink. Then we got EINVAL,
                                 // indicating that it *wasn't* a symlink.
                                 // This probably means a race condition. Let's pass up EAGAIN.
-                                Err(std::io::Error::from_raw_os_error(libc::EAGAIN))
-                            };
+                                io::Error::from_raw_os_error(libc::EAGAIN)
+                            });
                         }
 
                         // Pass other errors up
