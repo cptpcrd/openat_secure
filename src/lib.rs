@@ -141,6 +141,7 @@ impl DirSecureExt for Dir {
     fn sub_dir_secure<P: AsRef<Path>>(&self, p: P, lookup_flags: LookupFlags) -> io::Result<Dir> {
         let fd =
             open::open_file_secure(self, p.as_ref(), lookup_flags, constants::BASE_DIR_FLAGS, 0)?;
+
         Ok(unsafe { Dir::from_raw_fd(fd) })
     }
 
@@ -162,6 +163,7 @@ impl DirSecureExt for Dir {
             libc::O_CREAT | libc::O_EXCL | libc::O_WRONLY,
             mode,
         )?;
+
         Ok(unsafe { fs::File::from_raw_fd(fd) })
     }
 
@@ -183,6 +185,7 @@ impl DirSecureExt for Dir {
             libc::O_CREAT | libc::O_RDWR,
             mode,
         )?;
+
         Ok(unsafe { fs::File::from_raw_fd(fd) })
     }
 
@@ -226,6 +229,7 @@ impl DirSecureExt for Dir {
         lookup_flags: LookupFlags,
     ) -> io::Result<fs::File> {
         let fd = open::open_file_secure(self, p.as_ref(), lookup_flags, libc::O_RDONLY, 0)?;
+
         Ok(unsafe { fs::File::from_raw_fd(fd) })
     }
 
@@ -247,6 +251,7 @@ impl DirSecureExt for Dir {
             libc::O_CREAT | libc::O_WRONLY | libc::O_TRUNC,
             mode,
         )?;
+
         Ok(unsafe { fs::File::from_raw_fd(fd) })
     }
 
@@ -268,6 +273,7 @@ impl DirSecureExt for Dir {
             libc::O_CREAT | libc::O_WRONLY | libc::O_APPEND,
             mode,
         )?;
+
         Ok(unsafe { fs::File::from_raw_fd(fd) })
     }
 
