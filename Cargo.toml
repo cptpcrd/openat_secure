@@ -10,7 +10,7 @@ license = "MIT"
 repository = "https://github.com/cptpcrd/openat_secure"
 
 [dependencies]
-openat = "0.1"
+openat = "^0.1.19"
 
 libc = "0.2"
 
